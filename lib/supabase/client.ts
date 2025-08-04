@@ -1,13 +1,10 @@
-import { createClient } from "@supabase/supabase-js"
+// In lib/supabase/client.ts
+import { createBrowserClient } from '@supabase/ssr'
 
+// The '!' tells TypeScript that we're certain these environment variables will exist.
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL!
 const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 
-export const createSupabaseClient = () => {
-  return createClient(supabaseUrl, supabaseAnonKey)
-}
-
-// Create a singleton instance
-export const supabase = createSupabaseClient()
-
-export default supabase
+// This function will be imported into your client components to create a client
+export const createClient = () =>
+  createBrowserClient(supabaseUrl, supabaseAnonKey)
