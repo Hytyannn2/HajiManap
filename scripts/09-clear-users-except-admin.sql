@@ -1,5 +1,5 @@
 -- Clear all users except admin while preserving data integrity
--- This script safely removes all non-admin users and their associated data
+-- This script will safely remove all non-admin users and their associated data
 
 DO $$
 DECLARE
@@ -9,7 +9,7 @@ DECLARE
     deleted_public_users_count INTEGER;
     deleted_auth_users_count INTEGER;
 BEGIN
-    -- Find the admin user ID
+    -- Find the admin user ID by email
     SELECT id INTO admin_user_id 
     FROM auth.users 
     WHERE email = 'wmuhdharith@gmail.com';
@@ -20,7 +20,7 @@ BEGIN
         RETURN;
     END IF;
     
-    RAISE NOTICE 'Admin user found with ID: %', admin_user_id;
+    RAISE NOTICE 'Admin user found: %', admin_user_id;
     
     -- Delete non-admin bookings first (due to foreign key constraints)
     DELETE FROM public.bookings 
@@ -43,7 +43,7 @@ BEGIN
     GET DIAGNOSTICS deleted_public_users_count = ROW_COUNT;
     RAISE NOTICE 'Deleted % non-admin users from public.users', deleted_public_users_count;
     
-    -- Delete non-admin users from auth.users (this will cascade to related auth tables)
+    -- Delete non-admin users from auth.users
     DELETE FROM auth.users 
     WHERE id != admin_user_id;
     
@@ -51,27 +51,30 @@ BEGIN
     RAISE NOTICE 'Deleted % non-admin users from auth.users', deleted_auth_users_count;
     
     RAISE NOTICE 'Cleanup completed successfully!';
+    RAISE NOTICE 'Summary:';
+    RAISE NOTICE '- Bookings deleted: %', deleted_bookings_count;
+    RAISE NOTICE '- Loyalty records deleted: %', deleted_loyalty_count;
+    RAISE NOTICE '- Public users deleted: %', deleted_public_users_count;
+    RAISE NOTICE '- Auth users deleted: %', deleted_auth_users_count;
     
 END $$;
 
 -- Verification: Show what remains after cleanup
-SELECT 'Remaining auth.users' as table_name, count(*) as count FROM auth.users
+SELECT 'Remaining Users' as table_name, count(*) as count FROM auth.users
 UNION ALL
-SELECT 'Remaining public.users' as table_name, count(*) as count FROM public.users
+SELECT 'Remaining Public Users', count(*) FROM public.users
 UNION ALL
-SELECT 'Remaining loyalty records' as table_name, count(*) as count FROM public.loyalty
+SELECT 'Remaining Bookings', count(*) FROM public.bookings
 UNION ALL
-SELECT 'Remaining bookings' as table_name, count(*) as count FROM public.bookings;
+SELECT 'Remaining Loyalty Records', count(*) FROM public.loyalty;
 
 -- Show admin user details
 SELECT 
     'Admin User Details' as info,
     u.email,
-    pu.name,
-    pu.telegram,
+    pu.full_name,
     l.cuts_completed,
-    l.free_cut_earned,
-    l.created_at as loyalty_created
+    l.free_cut_earned
 FROM auth.users u
 LEFT JOIN public.users pu ON u.id = pu.id
 LEFT JOIN public.loyalty l ON u.id = l.user_id

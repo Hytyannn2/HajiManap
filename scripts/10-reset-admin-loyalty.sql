@@ -12,7 +12,7 @@ BEGIN
     
     -- Check if admin user exists
     IF admin_user_id IS NULL THEN
-        RAISE NOTICE 'Admin user not found! Cannot reset loyalty.';
+        RAISE NOTICE 'Admin user not found!';
         RETURN;
     END IF;
     
@@ -28,13 +28,13 @@ BEGIN
     
 END $$;
 
--- Verification: Show admin loyalty status after reset
+-- Verification: Show admin loyalty status
 SELECT 
-    'Admin Loyalty After Reset' as info,
+    'Admin Loyalty Status' as info,
     u.email,
     l.cuts_completed,
     l.free_cut_earned,
     l.updated_at
 FROM auth.users u
-LEFT JOIN public.loyalty l ON u.id = l.user_id
+JOIN public.loyalty l ON u.id = l.user_id
 WHERE u.email = 'wmuhdharith@gmail.com';

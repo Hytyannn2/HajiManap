@@ -1,5 +1,4 @@
 "use client"
-export const dynamic = "force-dynamic";
 
 import { useAuth } from "@/lib/auth"
 import { Button } from "@/components/ui/button"
@@ -9,64 +8,11 @@ import Link from "next/link"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { EnvCheck } from "@/components/env-check"
-import { Canvas } from "@react-three/fiber"
-import { OrbitControls, Text3D, Environment, Float, Sparkles } from "@react-three/drei"
-import { Suspense } from "react"
-
-function FloatingScissors() {
-  return (
-    <Float speed={2} rotationIntensity={1} floatIntensity={2}>
-      <mesh position={[0, 0, 0]} rotation={[0, 0, Math.PI / 4]}>
-        <boxGeometry args={[0.1, 1, 0.05]} />
-        <meshStandardMaterial color="#fbbf24" />
-      </mesh>
-      <mesh position={[0.2, 0, 0]} rotation={[0, 0, -Math.PI / 4]}>
-        <boxGeometry args={[0.1, 1, 0.05]} />
-        <meshStandardMaterial color="#fbbf24" />
-      </mesh>
-    </Float>
-  )
-}
-
-function Scene3D() {
-  return (
-    <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
-      <Suspense fallback={null}>
-        <Environment preset="night" />
-        <ambientLight intensity={0.5} />
-        <pointLight position={[10, 10, 10]} />
-
-        <Float speed={1.5} rotationIntensity={0.5} floatIntensity={1}>
-          <Text3D font="/fonts/Geist_Bold.json" size={0.5} height={0.1} position={[-2, 0.5, 0]}>
-            Hajimanap
-            <meshStandardMaterial color="#fbbf24" />
-          </Text3D>
-        </Float>
-
-        <Float speed={1.2} rotationIntensity={0.3} floatIntensity={0.8}>
-          <Text3D font="/fonts/Geist_Bold.json" size={0.4} height={0.08} position={[-1.5, -0.5, 0]}>
-            Cuts
-            <meshStandardMaterial color="#ffffff" />
-          </Text3D>
-        </Float>
-
-        <group position={[2, 0, 0]}>
-          <FloatingScissors />
-        </group>
-
-        <Sparkles count={50} scale={5} size={2} speed={0.5} />
-
-        <OrbitControls enableZoom={false} enablePan={false} autoRotate autoRotateSpeed={0.5} />
-      </Suspense>
-    </Canvas>
-  )
-}
 
 export default function HomePage() {
   const { user, loading: authLoading } = useAuth()
   const [envReady, setEnvReady] = useState(false)
   const [loading, setLoading] = useState(true)
-  const [isMobile, setIsMobile] = useState(false)
   const router = useRouter()
 
   // Check if environment variables are available
@@ -78,16 +24,6 @@ export default function HomePage() {
       setEnvReady(true)
     }
     setLoading(false)
-  }, [])
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768)
-    }
-
-    checkMobile()
-    window.addEventListener("resize", checkMobile)
-    return () => window.removeEventListener("resize", checkMobile)
   }, [])
 
   useEffect(() => {
@@ -146,7 +82,7 @@ export default function HomePage() {
         </div>
       </header>
 
-      {/* Hero Section with 3D */}
+      {/* Hero Section */}
       <main className="container mx-auto px-4 py-12 relative">
         <div className="grid lg:grid-cols-2 gap-12 items-center min-h-[70vh]">
           {/* Left Content */}
@@ -197,22 +133,18 @@ export default function HomePage() {
             </div>
           </div>
 
-          {/* Right 3D Scene */}
+          {/* Right Hero Image/Visual */}
           <div className="h-[400px] md:h-[500px] lg:h-[600px] relative">
-            {!isMobile && (
-              <div className="absolute inset-0 rounded-2xl overflow-hidden bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm">
-                <Scene3D />
-              </div>
-            )}
-            {isMobile && (
-              <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl">
-                <div className="text-center space-y-4">
-                  <Scissors className="h-24 w-24 text-yellow-400 mx-auto animate-pulse" />
-                  <div className="text-4xl font-bold text-yellow-400">Hajimanap</div>
-                  <div className="text-2xl font-bold text-white">Cuts</div>
+            <div className="h-full flex items-center justify-center bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-2xl">
+              <div className="text-center space-y-6">
+                <Scissors className="h-32 w-32 text-yellow-400 mx-auto animate-pulse" />
+                <div className="space-y-2">
+                  <div className="text-5xl font-bold text-yellow-400">Hajimanap</div>
+                  <div className="text-3xl font-bold text-white">Cuts</div>
+                  <div className="text-lg text-gray-300">Professional Mobile Barber</div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
 
