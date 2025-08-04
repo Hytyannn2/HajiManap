@@ -34,11 +34,11 @@ export default function HomePage() {
           </div>
 
           <h1 className="text-5xl md:text-7xl font-bold mb-6 bg-gradient-to-r from-yellow-400 via-yellow-300 to-yellow-500 bg-clip-text text-transparent">
-            HajiManap Cuts
+            HajiManap Barbershop
           </h1>
 
           <p className="text-xl md:text-2xl text-gray-300 mb-8 max-w-3xl mx-auto">
-            Professional mobile barber service for PASUM students. Quality haircuts delivered right to your doorstep.
+            Professional barber service for PASUM students. Quality haircuts just right to rizz up your crush
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -85,7 +85,7 @@ export default function HomePage() {
               <CardTitle className="text-white">Quick Service</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-gray-300 text-center">Fast, professional haircuts in 30 minutes or less</p>
+              <p className="text-gray-300 text-center">Fast, professional haircuts in 20 minutes or less</p>
             </CardContent>
           </Card>
 
@@ -163,17 +163,17 @@ export default function HomePage() {
         <div className="grid md:grid-cols-3 gap-8 mb-16">
           <div className="text-center">
             <Users className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-            <div className="text-3xl font-bold text-white mb-2">500+</div>
+            <div className="text-3xl font-bold text-white mb-2">50+</div>
             <p className="text-gray-300">Happy Customers</p>
           </div>
           <div className="text-center">
             <Calendar className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-            <div className="text-3xl font-bold text-white mb-2">1000+</div>
+            <div className="text-3xl font-bold text-white mb-2">100+</div>
             <p className="text-gray-300">Haircuts Completed</p>
           </div>
           <div className="text-center">
             <Zap className="h-12 w-12 text-yellow-400 mx-auto mb-4" />
-            <div className="text-3xl font-bold text-white mb-2">30min</div>
+            <div className="text-3xl font-bold text-white mb-2">20min</div>
             <p className="text-gray-300">Average Service Time</p>
           </div>
         </div>
