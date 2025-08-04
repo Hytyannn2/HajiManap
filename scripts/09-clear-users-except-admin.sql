@@ -1,61 +1,64 @@
 -- Clear all users except admin (wmuhdharith@gmail.com)
--- Run this in your Supabase SQL Editor
+-- This script safely removes all non-admin users and their associated data
 
--- First, let's identify the admin user ID
 DO $$
 DECLARE
     admin_user_id UUID;
+    deleted_bookings_count INTEGER;
+    deleted_loyalty_count INTEGER;
+    deleted_public_users_count INTEGER;
+    deleted_auth_users_count INTEGER;
 BEGIN
-    -- Get the admin user ID
+    -- Find admin user ID
     SELECT id INTO admin_user_id 
     FROM auth.users 
     WHERE email = 'wmuhdharith@gmail.com';
     
-    IF admin_user_id IS NOT NULL THEN
-        -- Delete all bookings for non-admin users
-        DELETE FROM public.bookings 
-        WHERE user_id != admin_user_id;
-        
-        -- Delete all loyalty records for non-admin users
-        DELETE FROM public.loyalty 
-        WHERE user_id != admin_user_id;
-        
-        -- Delete all users from public.users except admin
-        DELETE FROM public.users 
-        WHERE id != admin_user_id;
-        
-        -- Delete all auth users except admin
-        -- Note: This will cascade and clean up related auth data
-        DELETE FROM auth.users 
-        WHERE id != admin_user_id;
-        
-        RAISE NOTICE 'Successfully cleared all users except admin (%)!', admin_user_id;
-    ELSE
-        RAISE NOTICE 'Admin user not found! No users were deleted.';
+    IF admin_user_id IS NULL THEN
+        RAISE NOTICE 'Admin user not found! Aborting cleanup.';
+        RETURN;
     END IF;
+    
+    RAISE NOTICE 'Admin user ID: %', admin_user_id;
+    
+    -- Delete non-admin bookings
+    DELETE FROM public.bookings 
+    WHERE user_id != admin_user_id;
+    GET DIAGNOSTICS deleted_bookings_count = ROW_COUNT;
+    
+    -- Delete non-admin loyalty records
+    DELETE FROM public.loyalty 
+    WHERE user_id != admin_user_id;
+    GET DIAGNOSTICS deleted_loyalty_count = ROW_COUNT;
+    
+    -- Delete non-admin users from public.users
+    DELETE FROM public.users 
+    WHERE id != admin_user_id;
+    GET DIAGNOSTICS deleted_public_users_count = ROW_COUNT;
+    
+    -- Delete non-admin users from auth.users
+    DELETE FROM auth.users 
+    WHERE id != admin_user_id;
+    GET DIAGNOSTICS deleted_auth_users_count = ROW_COUNT;
+    
+    -- Show results
+    RAISE NOTICE 'Cleanup completed:';
+    RAISE NOTICE '- Deleted % bookings', deleted_bookings_count;
+    RAISE NOTICE '- Deleted % loyalty records', deleted_loyalty_count;
+    RAISE NOTICE '- Deleted % public users', deleted_public_users_count;
+    RAISE NOTICE '- Deleted % auth users', deleted_auth_users_count;
+    
 END $$;
 
--- Verify the cleanup
-SELECT 
-    'auth.users' as table_name,
-    COUNT(*) as remaining_records,
-    STRING_AGG(email, ', ') as remaining_emails
-FROM auth.users
-UNION ALL
-SELECT 
-    'public.users' as table_name,
-    COUNT(*) as remaining_records,
-    STRING_AGG(email, ', ') as remaining_emails
-FROM public.users
-UNION ALL
-SELECT 
-    'public.bookings' as table_name,
-    COUNT(*) as remaining_records,
-    'N/A' as remaining_emails
-FROM public.bookings
-UNION ALL
-SELECT 
-    'public.loyalty' as table_name,
-    COUNT(*) as remaining_records,
-    'N/A' as remaining_emails
-FROM public.loyalty;
+-- Verify what remains
+SELECT 'Remaining users:' as info;
+SELECT u.email, u.created_at, p.name
+FROM auth.users u
+LEFT JOIN public.users p ON u.id = p.id
+ORDER BY u.created_at;
+
+SELECT 'Remaining bookings:' as info;
+SELECT COUNT(*) as booking_count FROM public.bookings;
+
+SELECT 'Remaining loyalty records:' as info;
+SELECT COUNT(*) as loyalty_count FROM public.loyalty;
