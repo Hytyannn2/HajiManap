@@ -1,86 +1,108 @@
 "use client"
 
 import type React from "react"
-
 import { createContext, useContext, useEffect, useState } from "react"
-import type { User } from "@supabase/supabase-js"
-import { supabase } from "@/lib/supabase/client"
+import type { User, AuthError } from "@supabase/supabase-js"
+import { createClient } from "./supabase/client"
 
 interface AuthContextType {
   user: User | null
   loading: boolean
-  signIn: (email: string, password: string) => Promise<{ error: any }>
-  signUp: (email: string, password: string, fullName: string, phone: string) => Promise<{ error: any }>
-  signOut: () => Promise<void>
   isAdmin: boolean
+  signIn: (email: string, password: string) => Promise<{ error: AuthError | null }>
+  signUp: (email: string, password: string, fullName: string, telegram?: string) => Promise<{ error: AuthError | null }>
+  signOut: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const supabase = createClient()
+
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-    })
+  // Simple admin check - just check the email directly
+  const isAdmin = user?.email === "wmuhdharith@gmail.com"
 
-    // Listen for auth changes
+  useEffect(() => {
+    const checkUser = async () => {
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession()
+
+        if (session?.user) {
+          setUser(session.user)
+
+          // Create user record if it doesn't exist
+          const { error: userError } = await supabase.from("users").upsert({
+            id: session.user.id,
+            name: session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
+            email: session.user.email || "",
+            telegram: session.user.user_metadata?.telegram || null,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+
+          if (userError) {
+            console.error("Error creating user record:", userError)
+          }
+
+          // Create loyalty record if it doesn't exist
+          const { error: loyaltyError } = await supabase.from("loyalty").upsert({
+            user_id: session.user.id,
+            cut_count: 0,
+            free_cut_earned: false,
+            created_at: new Date().toISOString(),
+            updated_at: new Date().toISOString(),
+          })
+
+          if (loyaltyError) {
+            console.error("Error creating loyalty record:", loyaltyError)
+          }
+        } else {
+          setUser(null)
+        }
+      } catch (error) {
+        console.error("Error in checkUser:", error)
+        setUser(null)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    checkUser()
+
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
-      setUser(session?.user ?? null)
-      setLoading(false)
-
-      if (event === "SIGNED_IN" && session?.user) {
-        // Create user record if it doesn't exist
-        const { error } = await supabase.from("users").upsert(
-          {
-            id: session.user.id,
-            email: session.user.email,
-            full_name: session.user.user_metadata?.full_name || "",
-            phone: session.user.user_metadata?.phone || "",
-            created_at: new Date().toISOString(),
-          },
-          { onConflict: "id" },
-        )
-
-        if (!error) {
-          // Create loyalty record if it doesn't exist
-          await supabase.from("loyalty").upsert(
-            {
-              user_id: session.user.id,
-              cuts_completed: 0,
-              free_cut_earned: false,
-            },
-            { onConflict: "user_id" },
-          )
-        }
+      if (session?.user) {
+        setUser(session.user)
+      } else {
+        setUser(null)
       }
+      setLoading(false)
     })
 
-    return () => subscription.unsubscribe()
-  }, [])
+    return () => {
+      subscription.unsubscribe()
+    }
+  }, [supabase])
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    })
+    const { error } = await supabase.auth.signInWithPassword({ email, password })
     return { error }
   }
 
-  const signUp = async (email: string, password: string, fullName: string, phone: string) => {
+  const signUp = async (email: string, password: string, fullName: string, telegram?: string) => {
     const { error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
-          full_name: fullName,
-          phone: phone,
+          name: fullName,
+          telegram: telegram || null,
         },
       },
     })
@@ -89,18 +111,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut()
+    setUser(null)
   }
-
-  // Simple admin check
-  const isAdmin = user?.email === "wmuhdharith@gmail.com"
 
   const value = {
     user,
     loading,
+    isAdmin,
     signIn,
     signUp,
     signOut,
-    isAdmin,
   }
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>

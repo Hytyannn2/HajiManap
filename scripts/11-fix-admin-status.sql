@@ -1,49 +1,69 @@
 -- Fix admin status for wmuhdharith@gmail.com
--- This script ensures the admin user exists and has proper access
+-- This script ensures the admin user exists and has proper admin privileges
 
--- First, let's check if the admin user exists in auth.users
 DO $$
 DECLARE
     admin_user_id UUID;
+    admin_exists BOOLEAN := FALSE;
 BEGIN
-    -- Try to find the admin user
+    -- Check if admin user exists in auth.users
     SELECT id INTO admin_user_id 
     FROM auth.users 
     WHERE email = 'wmuhdharith@gmail.com';
     
     IF admin_user_id IS NOT NULL THEN
-        -- Admin user exists, ensure they have a proper user record
-        INSERT INTO public.users (id, email, full_name, phone, created_at)
-        VALUES (
-            admin_user_id,
-            'wmuhdharith@gmail.com',
-            'Admin User',
-            '',
-            NOW()
-        )
-        ON CONFLICT (id) DO UPDATE SET
-            email = EXCLUDED.email,
-            full_name = COALESCE(NULLIF(users.full_name, ''), EXCLUDED.full_name);
-        
-        -- Ensure admin has a loyalty record
-        INSERT INTO public.loyalty (user_id, cuts_completed, free_cut_earned)
-        VALUES (admin_user_id, 0, false)
-        ON CONFLICT (user_id) DO NOTHING;
-        
-        RAISE NOTICE 'Admin user setup completed for: %', admin_user_id;
+        admin_exists := TRUE;
+        RAISE NOTICE 'Admin user found in auth.users: %', admin_user_id;
     ELSE
-        RAISE NOTICE 'Admin user not found in auth.users. Please sign up with wmuhdharith@gmail.com first.';
+        RAISE NOTICE 'Admin user NOT found in auth.users!';
+        RAISE NOTICE 'Please sign up with wmuhdharith@gmail.com first';
+        RETURN;
     END IF;
+    
+    -- Ensure admin user exists in public.users
+    INSERT INTO public.users (id, name, email, created_at, updated_at)
+    VALUES (
+        admin_user_id,
+        'Haji Manap',
+        'wmuhdharith@gmail.com',
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (id) DO UPDATE SET
+        name = 'Haji Manap',
+        email = 'wmuhdharith@gmail.com',
+        updated_at = NOW();
+    
+    RAISE NOTICE 'Admin user record ensured in public.users';
+    
+    -- Ensure admin loyalty record exists
+    INSERT INTO public.loyalty (user_id, cut_count, free_cut_earned, created_at, updated_at)
+    VALUES (
+        admin_user_id,
+        0,
+        false,
+        NOW(),
+        NOW()
+    )
+    ON CONFLICT (user_id) DO UPDATE SET
+        updated_at = NOW();
+    
+    RAISE NOTICE 'Admin loyalty record ensured';
+    
+    -- Show admin status
+    RAISE NOTICE 'Admin setup complete!';
+    
 END $$;
 
--- Verify the setup
+-- Verify admin user setup
 SELECT 
-    u.id,
-    u.email,
-    u.full_name,
-    l.cuts_completed,
-    l.free_cut_earned,
-    'Admin user verified' as status
-FROM public.users u
-LEFT JOIN public.loyalty l ON u.id = l.user_id
-WHERE u.email = 'wmuhdharith@gmail.com';
+    'Admin User Verification' as info,
+    au.email as auth_email,
+    pu.name as public_name,
+    pu.email as public_email,
+    l.cut_count,
+    l.free_cut_earned
+FROM auth.users au
+LEFT JOIN public.users pu ON au.id = pu.id
+LEFT JOIN public.loyalty l ON au.id = l.user_id
+WHERE au.email = 'wmuhdharith@gmail.com';
